@@ -39,7 +39,7 @@ def signup():
         password = request.form.get("passwordInput", "").strip()
 
         if username and password and input_length(username, password):
-            user = User.query.filter_by(username=username).first()
+            user = User.query.filter(User.username.ilike(username)).first() # case insensitive so we dont have multiple usernames like JOhn, john, JOHN
             if not user:
                 password_hash = bcrypt.generate_password_hash(password).decode("utf-8") # Do not forget this for the love of god
                 new_user = User(username=username, password_hash=password_hash, role="user")

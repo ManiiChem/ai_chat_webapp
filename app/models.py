@@ -31,6 +31,10 @@ class Conversation(db.Model):
         cascade="all, delete-orphan"
     )
 
+    user: Mapped["User"] = relationship(
+        back_populates="conversations"
+    )
+
     @property
     def message_count(self):
         return len(self.messages)
