@@ -12,8 +12,10 @@ def create_app(config_class=None):
 
     from app.auth import auth_bp
     from app.core import core_bp
+    from app.ai import ai_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(core_bp, url_prefix="/")
+    app.register_blueprint(ai_bp, url_prefix="/ai")
 
     return app

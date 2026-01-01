@@ -2,5 +2,15 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-    <h1>Welcome!</h1>
+    <div class="container">
+        <h1 class="text-center mb-4">Welcome!</h1>
+        <div class="position-relative">
+            <textarea style="resize: none; height: 10%;" class="form-control rounded-5 shadow-sm text-break overflow-hidden" id="messageArea" required></textarea>
+            <button id="submitMessage" type="button" class="btn btn-secondary rounded-circle position-absolute end-0 bottom-0 m-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                <i class="bi bi-send-fill" style="font-size: 0.9rem;"></i>
+            </button>
+        </div>    
+
+    </div>
+    <script src="{{ url_for('core.static', filename='js/messageHandler.js') }}"></script>
 {% endblock %}
