@@ -1,9 +1,35 @@
-from flask import redirect, url_for, request, jsonify
+from flask import redirect, url_for, request, jsonify, current_app, Flask
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models import User, Conversation, Message
 from app.ai import ai_bp
 import boto3
+import threading
+
+model_id = "anthropic.claude-3-haiku-20240307-v1:0"
+
+def get_title_from_prompt_and_update(app: Flask, user_id: int, conversation_id: int, prompt: str) -> None:
+    with app.app_context():
+        try:
+            response = client.converse(
+                modelId=model_id,
+                messages=[{
+                    "role": "user",
+                    "content": [{"text": f"Generate a short, concise conversation title (max 6 words) based on this user prompt. Do not include quotes or words like 'Title:'. Prompt: {prompt}"}]
+                }],
+                inferenceConfig={"maxTokens": 50, "temperature": 0.5},
+            )
+            
+            new_title = response['output']['message']['content'][0]['text'].strip('"')
+
+            conversation = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
+            if conversation:
+                conversation.title = new_title
+                db.session.commit()
+
+        except Exception as e:
+            print("Title generatio failed:", e)
+
 
 client = boto3.client("bedrock-runtime", region_name="us-east-1")
 @ai_bp.route("/api/sendPrompt", methods=["POST"])
@@ -24,8 +50,6 @@ def send_receive_prompt():
     try:
         conversation = None
         message_history = []
-        
-        model_id = "anthropic.claude-3-haiku-20240307-v1:0"
 
         if conversation_id:
             conversation = Conversation.query.filter_by(id=conversation_id, user_id=current_user.id).first()
@@ -42,13 +66,23 @@ def send_receive_prompt():
                     "content": [{"text": msg.content}]
                 })
         else:
+            convo_title = "Untitled Conversation"
+
             conversation = Conversation(
                 user_id=current_user.id, 
                 ai_model=model_id,
+                title=convo_title,
                 created_at=created_at_local
             )
             db.session.add(conversation)
             db.session.commit()
+
+            # using a background thread to not halt the main execution (also gave it access to flasks app context)
+            app_instance = current_app._get_current_object()
+            threading.Thread(
+                target=get_title_from_prompt_and_update,
+                args=(app_instance, current_user.id, conversation.id, user_prompt)
+            ).start()
 
 
         message_history.append({
