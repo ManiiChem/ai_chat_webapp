@@ -3,6 +3,48 @@
 
 {% block content %}
     <link  rel="stylesheet" href="{{ url_for('core.static', filename='css/main.css') }}">
+
+    <div class="offcanvas offcanvas-start bg-light" data-bs-scroll="true" tabindex="-1" id="offcanvasChatHistory" aria-labelledby="offcanvasChatHistoryLabel">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title fw-bold text-secondary" id="offcanvasChatHistoryLabel">
+                History
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        
+        <div class="offcanvas-body p-0">
+            <div class="list-group list-group-flush">
+                {% if current_user.conversations %}
+                    {% for convo in current_user.conversations|sort(attribute='id', reverse=True) %}
+                        <a href="#" class="list-group-item list-group-item-action py-3 lh-sm conversationLink" data-id="{{ convo.id }}">
+                            
+                            <div class="d-flex w-100 align-items-center justify-content-between mb-1">
+                                <strong class="mb-1 text-truncate" style="max-width: 70%;">
+                                    {{ convo.title if convo.title else "Untitled Conversation" }}
+                                </strong>
+                                <small class="text-muted" style="font-size: 0.75rem;">
+                                    {{ convo.created_at.split(',')[0] }} </small>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="col-10 mb-1 small text-muted text-truncate">
+                                    {{ convo.message_count }} messages
+                                </div>
+                                <i class="bi bi-chevron-right text-muted" style="font-size: 0.8rem;"></i>
+                            </div>
+                        </a>
+
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted mt-5">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">No history yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <h1 class="text-center mb-4" id="welcomeTitle">Welcome!</h1>
 

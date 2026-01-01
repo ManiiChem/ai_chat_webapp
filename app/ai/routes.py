@@ -91,3 +91,43 @@ def send_receive_prompt():
         db.session.rollback()
         print(f"Error: {e}")
         return f"An error has occurred: {str(e)}", 500
+    
+@ai_bp.route("/api/getConversation/<int:conversation_id>", methods=["GET"])
+@login_required
+def get_conversation(conversation_id):
+    conversation = Conversation.query.filter_by(id=conversation_id, user_id=current_user.id).first()
+    
+    if not conversation:
+        return jsonify({"error": "Conversation not found"}), 404
+    
+    messages = Message.query.filter_by(conversation_id=conversation.id).order_by(Message.id.asc()).all()
+    
+    return jsonify({
+        "id": conversation.id,
+        "messages": [
+            {
+                "role": msg.message_role, 
+                "content": msg.content
+            } for msg in messages
+        ]
+    })
+
+@ai_bp.route("/api/updateConversations", methods=["GET"])
+@login_required
+def update_conversations():
+    user_convos = current_user.conversations
+    
+    data = []
+    for c in user_convos:
+        data.append({
+            "id": c.id,
+            "title": c.title if c.title else "Untitled Conversation",
+            "date": c.created_at.split(',')[0] if c.created_at else "",
+            "message_count": len(c.messages), 
+            "ai_model": c.ai_model
+        })
+    
+    # descending aka newest first
+    data.sort(key=lambda x: x['id'], reverse=True)
+    
+    return jsonify(data)
