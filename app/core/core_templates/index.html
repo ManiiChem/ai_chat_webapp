@@ -2,8 +2,13 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
+<   <link  rel="stylesheet" href="{{ url_for('core.static', filename='css/main.css') }}">
     <div class="container">
-        <h1 class="text-center mb-4">Welcome!</h1>
+        <h1 class="text-center mb-4" id="welcomeTitle">Welcome!</h1>
+
+        <div id="chatHistory" class="mb-4 d-flex flex-column gap-3 no-scrollbar" style="max-height: 60vh; overflow-y: auto;">
+        </div>
+
         <div class="position-relative">
             <textarea style="resize: none; height: 10%;" class="form-control rounded-5 shadow-sm text-break overflow-hidden" id="messageArea" required></textarea>
             <button id="submitMessage" type="button" class="btn btn-secondary rounded-circle position-absolute end-0 bottom-0 m-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
@@ -12,5 +17,6 @@
         </div>    
 
     </div>
+    <input type="hidden" id="conversationIdField" value="">
     <script src="{{ url_for('core.static', filename='js/messageHandler.js') }}"></script>
 {% endblock %}
