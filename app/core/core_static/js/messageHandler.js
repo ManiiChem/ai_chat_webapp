@@ -152,6 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 document.getElementById("conversationIdField").value = "";
                                 currentConversationId = null;
                             }
+                            refreshSidebar(); // For the no history icon
                         }
                     } catch (err) {
                         alert("Failed to delete.");
