@@ -54,26 +54,45 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             convos.forEach(c => {
-                const item = document.createElement('a');
-                item.href = "#";
-                item.className = "list-group-item list-group-item-action py-3 lh-sm conversationLink";
-                item.dataset.id = c.id; 
+                const itemContainer = document.createElement('div');
+                itemContainer.className = "list-group-item list-group-item-action py-3 lh-sm d-flex justify-content-between align-items-start";
+                itemContainer.style.cursor = "pointer";
+                
+                itemContainer.id = `convo-${c.id}`; 
 
-                item.innerHTML = `
-                    <div class="d-flex w-100 align-items-center justify-content-between mb-1">
-                        <strong class="mb-1 text-truncate" style="max-width: 70%;">
-                            ${c.title}
-                        </strong>
-                        <small class="text-muted" style="font-size: 0.75rem;">${c.date}</small>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="col-10 mb-1 small text-muted text-truncate">
-                            ${c.message_count} messages
+                itemContainer.innerHTML = `
+                    <div class="me-2 text-truncate conversationLink" data-id="${c.id}" style="flex-grow: 1;">
+                        <div class="d-flex w-100 align-items-center justify-content-between mb-1">
+                            <strong class="mb-1 text-truncate" id="title-${c.id}">
+                                ${c.title}
+                            </strong>
                         </div>
-                        <i class="bi bi-chevron-right text-muted" style="font-size: 0.8rem;"></i>
+                        <div class="small text-muted text-truncate">
+                            ${c.date}
+                        </div>
+                    </div>
+
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light text-secondary border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="event.stopPropagation()">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 rename-btn" href="#" data-id="${c.id}" data-title="${c.title}">
+                                    <i class="bi bi-pencil small"></i> Rename
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 text-danger delete-btn" href="#" data-id="${c.id}">
+                                    <i class="bi bi-trash small"></i> Delete
+                                </a>
+                            </li>
+                        </ul>
                     </div>
                 `;
-                sidebarList.appendChild(item);
+                
+                sidebarList.appendChild(itemContainer);
             });
 
         } catch (error) {
@@ -82,7 +101,65 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (sidebarList) {
-        sidebarList.addEventListener('click', (e) => {
+        sidebarList.addEventListener('click', async (e) => {
+            
+            const renameBtn = e.target.closest('.rename-btn');
+            if (renameBtn) {
+                e.preventDefault();
+                e.stopPropagation(); 
+                
+                const convoId = renameBtn.dataset.id;
+                const currentTitle = renameBtn.dataset.title;
+                const newTitle = prompt("Enter new chat title:", currentTitle);
+
+                if (newTitle && newTitle.trim() !== "") {
+                    try {
+                        const response = await fetch('/ai/api/renameConversation', {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ conversation_id: convoId, new_title: newTitle })
+                        });
+                        if (response.ok) {
+                            document.getElementById(`title-${convoId}`).textContent = newTitle;
+                            renameBtn.dataset.title = newTitle; 
+                        }
+                    } catch (err) {
+                        alert("Failed to rename.");
+                    }
+                }
+                return;
+            }
+
+            const deleteBtn = e.target.closest('.delete-btn');
+            if (deleteBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (confirm("Are you sure you want to delete this chat?")) {
+                    const convoId = deleteBtn.dataset.id;
+                    try {
+                        const response = await fetch(`/ai/api/deleteConversation/${convoId}`, {
+                            method: "DELETE"
+                        });
+
+                        if (response.ok) {
+                            document.getElementById(`convo-${convoId}`).remove();
+                            
+                            if (currentConversationId == convoId) {
+                                chatHistory.innerHTML = '';
+                                chatHistory.classList.add('d-none');
+                                welcomeTitle.classList.remove('d-none');
+                                document.getElementById("conversationIdField").value = "";
+                                currentConversationId = null;
+                            }
+                        }
+                    } catch (err) {
+                        alert("Failed to delete.");
+                    }
+                }
+                return;
+            }
+
             const link = e.target.closest('.conversationLink');
             if (link) {
                 e.preventDefault();

@@ -165,3 +165,42 @@ def update_conversations():
     data.sort(key=lambda x: x['id'], reverse=True)
     
     return jsonify(data)
+
+@ai_bp.route("/api/deleteConversation/<int:conversation_id>", methods=["DELETE"])
+@login_required
+def delete_conversation(conversation_id):
+    convo = Conversation.query.filter_by(id=conversation_id, user_id=current_user.id).first()
+
+    if not convo:
+        return jsonify({"error": "Conversation not found"}), 404
+    
+    try:
+        db.session.delete(convo)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Deleted successfully"}) # Keeping it for debugging in the network tab
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    
+@ai_bp.route("/api/renameConversation", methods=["PUT"])
+@login_required
+def rename_conversation():
+    data = request.json
+    conversation_id = data.get("conversation_id")
+    new_title = data.get("new_title")
+    
+    if not new_title:
+        return jsonify({"error": "Title cannot be empty"}), 400
+
+    conversation = Conversation.query.filter_by(id=conversation_id, user_id=current_user.id).first()
+    
+    if not conversation:
+        return jsonify({"error": "Conversation not found"}), 404
+        
+    try:
+        conversation.title = new_title
+        db.session.commit()
+        return jsonify({"success": True, "title": new_title})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
