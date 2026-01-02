@@ -5,14 +5,15 @@ from app.models import User, Conversation, Message
 from app.ai import ai_bp
 import boto3
 import threading
+from app.ai.ai_models import AI_MODELS_AVAILABLE
 
-model_id = "anthropic.claude-3-haiku-20240307-v1:0"
+#model_id = "anthropic.claude-3-haiku-20240307-v1:0"
 
-def get_title_from_prompt_and_update(app: Flask, user_id: int, conversation_id: int, prompt: str) -> None:
+def get_title_from_prompt_and_update(app: Flask, user_id: int, conversation_id: int, prompt: str, selected_ai_model: str) -> None:
     with app.app_context():
         try:
             response = client.converse(
-                modelId=model_id,
+                modelId=selected_ai_model,
                 messages=[{
                     "role": "user",
                     "content": [{"text": f"Generate a short, concise conversation title (max 6 words) based on this user prompt. Do not include quotes or words like 'Title:'. Prompt: {prompt}"}]
@@ -42,7 +43,7 @@ def send_receive_prompt():
     user_prompt = data.get("user_prompt", "").strip()
     conversation_id = data.get("conversation_id")
     created_at_local = data.get("created_at")
-    #print(created_at_local)
+    selected_ai_model = data.get("ai_model")
 
     if not user_prompt:
         user_prompt = "Continue"
@@ -65,12 +66,14 @@ def send_receive_prompt():
                     "role": msg.message_role,
                     "content": [{"text": msg.content}]
                 })
+            
+            selected_ai_model = conversation.ai_model # so users cant switch ai models for existing conversations
         else:
             convo_title = "Untitled Conversation"
 
             conversation = Conversation(
                 user_id=current_user.id, 
-                ai_model=model_id,
+                ai_model=selected_ai_model,
                 title=convo_title,
                 created_at=created_at_local
             )
@@ -81,7 +84,7 @@ def send_receive_prompt():
             app_instance = current_app._get_current_object()
             threading.Thread(
                 target=get_title_from_prompt_and_update,
-                args=(app_instance, current_user.id, conversation.id, user_prompt)
+                args=(app_instance, current_user.id, conversation.id, user_prompt, selected_ai_model)
             ).start()
 
 
@@ -100,7 +103,7 @@ def send_receive_prompt():
 
         # call bedrock
         response = client.converse(
-            modelId=model_id,
+            modelId=selected_ai_model,
             messages=message_history,
             inferenceConfig={"maxTokens": 1024, "temperature": 0.7},
         )
@@ -138,6 +141,7 @@ def get_conversation(conversation_id):
     
     return jsonify({
         "id": conversation.id,
+        "conversationAiModel": conversation.ai_model,
         "messages": [
             {
                 "role": msg.message_role, 

@@ -23,14 +23,32 @@
         <h1 class="text-center mb-4" id="welcomeTitle">Welcome!</h1>
 
         <div id="chatHistory" class="mb-4 d-flex flex-column gap-3 no-scrollbar" style="max-height: 60vh; overflow-y: auto;">
-        </div>
+        </div>   
 
         <div class="position-relative">
             <textarea style="resize: none; height: 10%;" class="form-control rounded-5 shadow-sm text-break overflow-hidden" id="messageArea" required></textarea>
-            <button id="submitMessage" type="button" class="btn btn-secondary rounded-circle position-absolute end-0 bottom-0 m-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                <i class="bi bi-send-fill" style="font-size: 0.9rem;"></i>
-            </button>
-        </div>    
+            
+            <div class="position-absolute bottom-0 end-0 m-2 d-flex gap-2 justify-content-center align-items-center">
+                
+                <div class="dropdown-center" id="aiSelectorParent">
+                    <button id="changeAiModel" type="button" class="btn btn-secondary rounded-circle" data-bs-toggle="dropdown" data-bs-offset="0,10" aria-expanded="false" style="width: 40px; height: 40px;">
+                        <i class="bi bi-anthropic"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        {% if session.get("models_available") %}
+                            {% for model_name, model_value in session.get("models_available").items() %}
+                                <li><button class="dropdown-item aiModelButton" data-ai-model="{{ model_value }}">{{ model_name }}</button></li>
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <button id="submitMessage" type="button" class="btn btn-secondary rounded-circle" style="width: 40px; height: 40px;">
+                    <i class="bi bi-send-fill" style="font-size: 0.9rem;"></i>
+                </button>
+
+            </div>
+        </div>
 
     </div>
     <input type="hidden" id="conversationIdField" value="">
