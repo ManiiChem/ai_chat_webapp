@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const welcomeTitle = document.getElementById("welcomeTitle");
     const sidebarList = document.querySelector("#offcanvasChatHistory .list-group"); 
     const offcanvasElement = document.getElementById('offcanvasChatHistory');
+    const newChatButton = document.getElementById("newChatButton");
 
     function createMessageBubble(text, isUser) {
         const wrapper = document.createElement("div");
@@ -180,4 +181,20 @@ document.addEventListener("DOMContentLoaded", () => {
             messageText.focus();
         }
     });
+
+    if (newChatButton) {
+        newChatButton.addEventListener("click", (e) => {
+            e.preventDefault();
+            currentConversationId = null;
+            document.getElementById("conversationIdField").value = "";
+
+            chatHistory.innerHTML = "";
+            welcomeTitle.classList.remove('d-none');
+            chatHistory.classList.add('d-none');
+
+            messageText.value = "";
+            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
+            if (bsOffcanvas) bsOffcanvas.hide();
+        });
+    }
 });

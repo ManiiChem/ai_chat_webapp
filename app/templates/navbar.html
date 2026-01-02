@@ -11,7 +11,7 @@
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">LOGIN</a></li>
                 {% else %}
                     <li class="nav-item"><button type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasChatHistory" aria-controls="offcanvasChatHistory" class="nav-link">Chat History</button></li>   
-                    <li class="nav-item"><a class="nav-link" href="/">New Chat</a></li>   
+                    <li class="nav-item"><button class="nav-link" id="newChatButton">New Chat</button></li>   
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a></li>
                 {% endif %}
             </ul>
