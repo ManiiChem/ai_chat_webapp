@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const chatHistory = document.getElementById("chatHistory");
     const welcomeTitle = document.getElementById("welcomeTitle");
     const sidebarList = document.querySelector("#offcanvasChatHistory .list-group"); 
-    const offcanvasElement = document.getElementById('offcanvasChatHistory');
+    const offcanvasElement = document.getElementById("offcanvasChatHistory");
     const newChatButton = document.getElementById("newChatButton");
     const aiModelButtons = document.querySelectorAll(".aiModelButton");
     const aiSelectorDiv = document.getElementById("aiSelectorParent");
@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
         wrapper.className = `d-flex ${isUser ? "justify-content-end" : "justify-content-start"}`;
 
         const bubble = document.createElement("div");
-        bubble.className = `p-3 rounded-4 ${isUser ? 'bg-primary text-white' : 'bg-light text-dark shadow-sm'}`;
+        bubble.className = `p-3 rounded-4 ${isUser ? "bg-primary text-white" : "bg-light text-dark shadow-sm"}`;
         bubble.style.maxWidth = "75%";
         bubble.textContent = text;
 
@@ -62,11 +62,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function refreshSidebar() {
         try {
-            const response = await fetch('/ai/api/updateConversations');
+            const response = await fetch("/ai/api/updateConversations");
             if (!response.ok) return;
             const convos = await response.json();
 
-            sidebarList.innerHTML = '';
+            sidebarList.innerHTML = "";
 
             if (convos.length === 0) {
                 sidebarList.innerHTML = `
@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             convos.forEach(c => {
-                const itemContainer = document.createElement('div');
+                const itemContainer = document.createElement("div");
                 itemContainer.className = "list-group-item list-group-item-action py-3 lh-sm d-flex justify-content-between align-items-start";
                 itemContainer.style.cursor = "pointer";
                 
@@ -87,26 +87,35 @@ document.addEventListener("DOMContentLoaded", () => {
                 itemContainer.innerHTML = `
                     <div class="me-2 text-truncate conversationLink" data-id="${c.id}" style="flex-grow: 1;">
                         <div class="d-flex w-100 align-items-center justify-content-between mb-1">
-                            <strong class="mb-1 text-truncate" id="title-${c.id}">
-                                ${c.title}
-                            </strong>
+                                <strong class="mb-1 text-truncate" id="title-${c.id}">${c.title}</strong>
+                            </div>
+                            <div class="small text-muted text-truncate">${c.date}</div>
                         </div>
-                        <div class="small text-muted text-truncate">
-                            ${c.date}
-                        </div>
-                    </div>
 
                     <div class="dropdown">
                         <button class="btn btn-sm btn-light text-secondary border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="event.stopPropagation()">
                             <i class="bi bi-three-dots-vertical"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
+                            
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2 info-btn" href="#" 
+                                    data-id="${c.id}" 
+                                    data-title="${c.title}" 
+                                    data-model="${c.ai_model}" 
+                                    data-count="${c.message_count}" 
+                                    data-date="${c.date}">
+                                    <i class="bi bi-info-circle small"></i> Info
+                                </a>
+                            </li>
+                            
+                            <li><hr class="dropdown-divider"></li>
+                            
                             <li>
                                 <a class="dropdown-item d-flex align-items-center gap-2 rename-btn" href="#" data-id="${c.id}" data-title="${c.title}">
                                     <i class="bi bi-pencil small"></i> Rename
                                 </a>
                             </li>
-                            <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item d-flex align-items-center gap-2 text-danger delete-btn" href="#" data-id="${c.id}">
                                     <i class="bi bi-trash small"></i> Delete
@@ -114,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             </li>
                         </ul>
                     </div>
-                `;
+                    `;
                 
                 sidebarList.appendChild(itemContainer);
             });
@@ -125,9 +134,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (sidebarList) {
-        sidebarList.addEventListener('click', async (e) => {
+        sidebarList.addEventListener("click", async (e) => {
+            const infoBtn = e.target.closest(".info-btn");
+            if (infoBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const id = infoBtn.dataset.id;
+                const title = infoBtn.dataset.title;
+                const model = infoBtn.dataset.model;
+                const count = infoBtn.dataset.count;
+                const date = infoBtn.dataset.date;
+
+                document.getElementById("modal-title-display").textContent = title;
+                document.getElementById("modal-model").textContent = model;
+                document.getElementById("modal-count").textContent = count;
+                document.getElementById("modal-date").textContent = date;
+                document.getElementById("modal-id").textContent = id;
+
+                const modalElement = document.getElementById("chatInfoModal");
+                const bsModal = new bootstrap.Modal(modalElement);
+                bsModal.show();
+                
+                return;
+            }
             
-            const renameBtn = e.target.closest('.rename-btn');
+            const renameBtn = e.target.closest(".rename-btn");
             if (renameBtn) {
                 e.preventDefault();
                 e.stopPropagation(); 
@@ -138,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (newTitle && newTitle.trim() !== "") {
                     try {
-                        const response = await fetch('/ai/api/renameConversation', {
+                        const response = await fetch("/ai/api/renameConversation", {
                             method: "PUT",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ conversation_id: convoId, new_title: newTitle })
@@ -154,7 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const deleteBtn = e.target.closest('.delete-btn');
+            const deleteBtn = e.target.closest(".delete-btn");
             if (deleteBtn) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -186,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const link = e.target.closest('.conversationLink');
+            const link = e.target.closest(".conversationLink");
             if (link) {
                 e.preventDefault();
                 const convoId = link.dataset.id;
@@ -297,8 +329,8 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("conversationIdField").value = "";
 
             chatHistory.innerHTML = "";
-            welcomeTitle.classList.remove('d-none');
-            chatHistory.classList.add('d-none');
+            welcomeTitle.classList.remove("d-none");
+            chatHistory.classList.add("d-none");
             aiSelectorDiv.classList.remove("d-none");
 
             messageText.value = "";
