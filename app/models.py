@@ -1,6 +1,6 @@
 from app.extensions import db
 from flask_login import UserMixin
-from sqlalchemy import String, Boolean, ForeignKey, Integer, Text
+from sqlalchemy import String, Boolean, ForeignKey, Integer, Text, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Optional
 
@@ -47,6 +47,7 @@ class Message(db.Model):
 
     message_role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    edited: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false()) # the user rewrote this message by hand
 
     conversation: Mapped["Conversation"] = relationship(
         back_populates="messages"
