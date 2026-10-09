@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     let currentConversationId = document.getElementById("conversationIdField").value;
-    let selectedAiModel = "anthropic.claude-3-haiku-20240307-v1:0"; // This is the default ai model 
+    let selectedAiModel;
     const messageButton = document.getElementById("submitMessage");
     const messageText = document.getElementById("messageArea");
     const chatHistory = document.getElementById("chatHistory");
@@ -13,22 +13,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const aiModelDisplayButton = document.getElementById("changeAiModel");
 
     const changeAiDisplay = (iconName) => aiModelDisplayButton.innerHTML = `<i class="bi bi-${iconName}"></i>`;
+    function selectAiModel(aiValue) {
+        const aiValueLowerCase = aiValue.toLowerCase();
+
+        if (aiValueLowerCase.includes("meta") || aiValueLowerCase.includes("llama")) {
+            changeAiDisplay("meta");
+        } else if (aiValueLowerCase.includes("openai") || aiValueLowerCase.includes("gpt")) {
+            changeAiDisplay("openai");
+        } else {
+            changeAiDisplay("robot");
+        }
+
+        selectedAiModel = aiValue;
+    }
+
+    const defaultAiModel = aiSelectorDiv.dataset.defaultModel; // the server decides the default ai model
+    selectAiModel(defaultAiModel);
+
     aiModelButtons.forEach((aiSelectButton) => {
         aiSelectButton.addEventListener("click", () => {
-            const aiValue = aiSelectButton.dataset.aiModel; // the dataset property automatically converts kebab-case to camelCase
-            const aiValueLowerCase = aiValue.toLowerCase();
-
-            if (aiValueLowerCase.includes("anthropic") || aiValueLowerCase.includes("claude")) {
-                changeAiDisplay("anthropic");
-            } else if (aiValueLowerCase.includes("meta") || aiValueLowerCase.includes("llama")) {
-                changeAiDisplay("meta");
-            } else if (aiValueLowerCase.includes("amazon")) {
-                changeAiDisplay("amazon");
-            } else {
-                changeAiDisplay("robot");
-            }
-
-            selectedAiModel = aiValue;
+            selectAiModel(aiSelectButton.dataset.aiModel); // the dataset property automatically converts kebab-case to camelCase
         });
     });
 
@@ -359,6 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
             welcomeTitle.classList.remove("d-none");
             chatHistory.classList.add("d-none");
             aiSelectorDiv.classList.remove("d-none");
+            selectAiModel(defaultAiModel); // otherwise the new chat would keep the model of the last opened conversation
 
             messageText.value = "";
             const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);

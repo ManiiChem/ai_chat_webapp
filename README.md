@@ -1,13 +1,13 @@
 # Flask AI Chat Wrapper
 
-This is a full-stack AI chat application built with Flask and AWS Bedrock. With multiple model support, asynchronous background tasks, and persistent history, and user authentication.
+This is a full-stack AI chat application built with Flask and the Groq API (previously with the AWS Bedrock API). With multiple model support, asynchronous background tasks, and persistent history, and user authentication.
 
 ![Project screenshot](/media/index.png) 
 ![Project screenshot 2](/media/index2.png) 
 
 ## Features
 
-**Multi Model Support:** Switch between many popular AI models such as **Claude 3 Haiku**, **Llama 3**, and **Mistral** using AWS Bedrock.
+**Multi Model Support:** Switch between open AI models such as **GPT-OSS 120B** and **GPT-OSS 20B** using the free Groq API (or any other OpenAI compatible provider by setting `AI_BASE_URL`).
 
 **Persistent History:** All conversations are stored in a relational database using `SQLAlchemy`.
 
@@ -23,7 +23,7 @@ This is a full-stack AI chat application built with Flask and AWS Bedrock. With 
 
 **Backend:** Python (Flask), Flask-SQLAlchemy 
 
-**AI:** AWS Bedrock (Boto3)
+**AI:** Groq API (OpenAI Python SDK)
 
 **Database:** SQLite (Development) & PostgreSQL (Production ready)
 
@@ -56,7 +56,7 @@ This is a full-stack AI chat application built with Flask and AWS Bedrock. With 
     ```ini
     SECRET_KEY=your_flask_secret_key
     DATABASE_URI=sqlite:///database.db
-    AWS_BEARER_TOKEN_BEDROCK=your_aws_bedrock_api
+    AI_API_KEY=your_groq_api_key
     ```
 
 5.  **Initialize the database**

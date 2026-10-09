@@ -5,35 +5,46 @@ from sqlalchemy import func
 from app.extensions import db
 from app.models import Conversation, Message
 from app.ai import ai_bp
-import boto3
+from openai import OpenAI
 import threading
-from app.ai.ai_models import AI_MODELS_AVAILABLE
+from app.ai.ai_models import AI_MODELS_AVAILABLE, DEFAULT_AI_MODEL, TITLE_AI_MODEL
 
 HISTORY_LIMIT = 20 # how many past messages get sent to the model as context
 TITLE_MAX_LENGTH = 100 # matches the conversations.title column
 
-client = boto3.client("bedrock-runtime", region_name="us-east-1")
-
-# The only place that talks to the AI provider, so switching providers means changing just this function
+# the only place that talks to the AI provider, groq uses the same API format as OpenAI, so the openai
+# package works with it and any other OpenAI compatible provider only needs a different AI_BASE_URL (opt) and AI_API_KEY
 def ask_model(model_id: str, messages: list, max_tokens: int, temperature: float) -> str:
-    response = client.converse(
-        modelId=model_id,
-        messages=messages,
-        inferenceConfig={"maxTokens": max_tokens, "temperature": temperature},
+    client = OpenAI(
+        api_key=current_app.config["AI_API_KEY"],
+        base_url=current_app.config["AI_BASE_URL"],
+        timeout=60
     )
 
-    return response['output']['message']['content'][0]['text']
+    # max_output_tokens also counts the tokens the model spends on reasoning before it writes the answer
+    response = client.responses.create(
+        model=model_id,
+        input=messages,
+        max_output_tokens=max_tokens,
+        temperature=temperature
+    )
 
-def get_title_from_prompt_and_update(app: Flask, user_id: int, conversation_id: int, prompt: str, selected_ai_model: str) -> None:
+    ai_text = response.output_text
+    if not ai_text:
+        raise ValueError(f"{model_id} returned an empty response")
+
+    return ai_text
+
+def get_title_from_prompt_and_update(app: Flask, user_id: int, conversation_id: int, prompt: str) -> None:
     with app.app_context():
         try:
             new_title = ask_model(
-                selected_ai_model,
+                TITLE_AI_MODEL,
                 [{
                     "role": "user",
-                    "content": [{"text": f"Generate a short, concise conversation title (max 6 words) based on this user prompt. Do not include quotes or words like 'Title:'. Prompt: {prompt}"}]
+                    "content": f"Generate a short, concise conversation title (max 6 words) based on this user prompt. Do not include quotes or words like 'Title:'. Prompt: {prompt}"
                 }],
-                max_tokens=50,
+                max_tokens=500,
                 temperature=0.5
             ).strip().strip('"')[:TITLE_MAX_LENGTH]
 
@@ -75,21 +86,25 @@ def send_receive_prompt():
         for msg in reversed(past_messages):
             message_history.append({
                 "role": msg.message_role,
-                "content": [{"text": msg.content}]
+                "content": msg.content
             })
 
         selected_ai_model = conversation.ai_model # so users cant switch ai models for existing conversations
+
+        # conversations from before the switch to groq still have a bedrock model id saved, those continue on the default model
+        if selected_ai_model not in AI_MODELS_AVAILABLE.values():
+            selected_ai_model = DEFAULT_AI_MODEL
     elif selected_ai_model not in AI_MODELS_AVAILABLE.values():
         return "Unknown AI model", 400
 
     message_history.append({
         "role": "user",
-        "content": [{"text": user_prompt}]
+        "content": user_prompt
     })
 
     try:
-        # call bedrock first so nothing is saved if it fails
-        ai_text = ask_model(selected_ai_model, message_history, max_tokens=1024, temperature=0.7)
+        # call the model first so nothing is saved if it fails
+        ai_text = ask_model(selected_ai_model, message_history, max_tokens=2048, temperature=0.7)
 
         is_new_conversation = conversation is None
         if is_new_conversation:
@@ -101,6 +116,8 @@ def send_receive_prompt():
             )
             db.session.add(conversation)
             db.session.flush() # assigns conversation.id without committing yet
+        else:
+            conversation.ai_model = selected_ai_model # only changes anything for the old bedrock conversations
 
         db.session.add(Message(
             conversation_id=conversation.id,
@@ -125,7 +142,7 @@ def send_receive_prompt():
         app_instance = current_app._get_current_object()
         threading.Thread(
             target=get_title_from_prompt_and_update,
-            args=(app_instance, current_user.id, conversation.id, user_prompt, selected_ai_model)
+            args=(app_instance, current_user.id, conversation.id, user_prompt)
         ).start()
 
     return jsonify({

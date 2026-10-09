@@ -30,9 +30,9 @@
             
             <div class="position-absolute bottom-0 end-0 m-2 d-flex gap-2 justify-content-center align-items-center">
                 
-                <div class="dropdown-center" id="aiSelectorParent">
+                <div class="dropdown-center" id="aiSelectorParent" data-default-model="{{ default_ai_model }}">
                     <button id="changeAiModel" type="button" class="btn btn-secondary rounded-circle" data-bs-toggle="dropdown" data-bs-offset="0,10" aria-expanded="false" style="width: 40px; height: 40px;">
-                        <i class="bi bi-anthropic"></i>
+                        <i class="bi bi-robot"></i>
                     </button>
                     <ul class="dropdown-menu">
                         {% for model_name, model_value in models_available.items() %}
