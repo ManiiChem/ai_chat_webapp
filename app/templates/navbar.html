@@ -12,7 +12,11 @@
                 {% else %}
                     <li class="nav-item"><button type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasChatHistory" aria-controls="offcanvasChatHistory" class="nav-link">Chat History</button></li>   
                     <li class="nav-item"><button class="nav-link" id="newChatButton">New Chat</button></li>   
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    <li class="nav-item">
+                        <form method="POST" action="{{ url_for('auth.logout') }}" class="m-0">
+                            <button type="submit" class="nav-link">Logout</button>
+                        </form>
+                    </li>
                 {% endif %}
             </ul>
         </div>

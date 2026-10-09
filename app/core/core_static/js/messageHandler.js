@@ -60,6 +60,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return wrapper;
     }
 
+    // new convos store an ISO timestamp but older ones stored the browsers locale string
+    function formatDate(rawDate) {
+        if (!rawDate) return "";
+        const parsed = new Date(rawDate);
+        return isNaN(parsed) ? rawDate.split(",")[0] : parsed.toLocaleDateString();
+    }
+
     async function refreshSidebar() {
         try {
             const response = await fetch("/ai/api/updateConversations");
@@ -82,14 +89,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 itemContainer.className = "list-group-item list-group-item-action py-3 lh-sm d-flex justify-content-between align-items-start";
                 itemContainer.style.cursor = "pointer";
                 
-                itemContainer.id = `convo-${c.id}`; 
+                itemContainer.id = `convo-${c.id}`;
 
+                // the markup below has no server data in it on purpose cuz the values get filled in afterwards
+                // with textContent and dataset which treat them as plain text and never as HTML so no xss
                 itemContainer.innerHTML = `
-                    <div class="me-2 text-truncate conversationLink" data-id="${c.id}" style="flex-grow: 1;">
+                    <div class="me-2 text-truncate conversationLink" style="flex-grow: 1;">
                         <div class="d-flex w-100 align-items-center justify-content-between mb-1">
-                                <strong class="mb-1 text-truncate" id="title-${c.id}">${c.title}</strong>
+                                <strong class="mb-1 text-truncate conversationTitle"></strong>
                             </div>
-                            <div class="small text-muted text-truncate">${c.date}</div>
+                            <div class="small text-muted text-truncate conversationDate"></div>
                         </div>
 
                     <div class="dropdown">
@@ -97,34 +106,51 @@ document.addEventListener("DOMContentLoaded", () => {
                             <i class="bi bi-three-dots-vertical"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
-                            
+
                             <li>
-                                <a class="dropdown-item d-flex align-items-center gap-2 info-btn" href="#" 
-                                    data-id="${c.id}" 
-                                    data-title="${c.title}" 
-                                    data-model="${c.ai_model}" 
-                                    data-count="${c.message_count}" 
-                                    data-date="${c.date}">
+                                <a class="dropdown-item d-flex align-items-center gap-2 info-btn" href="#">
                                     <i class="bi bi-info-circle small"></i> Info
                                 </a>
                             </li>
-                            
+
                             <li><hr class="dropdown-divider"></li>
-                            
+
                             <li>
-                                <a class="dropdown-item d-flex align-items-center gap-2 rename-btn" href="#" data-id="${c.id}" data-title="${c.title}">
+                                <a class="dropdown-item d-flex align-items-center gap-2 rename-btn" href="#">
                                     <i class="bi bi-pencil small"></i> Rename
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item d-flex align-items-center gap-2 text-danger delete-btn" href="#" data-id="${c.id}">
+                                <a class="dropdown-item d-flex align-items-center gap-2 text-danger delete-btn" href="#">
                                     <i class="bi bi-trash small"></i> Delete
                                 </a>
                             </li>
                         </ul>
                     </div>
                     `;
-                
+
+                const displayDate = formatDate(c.date);
+
+                itemContainer.querySelector(".conversationLink").dataset.id = c.id;
+                itemContainer.querySelector(".conversationDate").textContent = displayDate;
+
+                const titleElement = itemContainer.querySelector(".conversationTitle");
+                titleElement.id = `title-${c.id}`;
+                titleElement.textContent = c.title;
+
+                const infoBtn = itemContainer.querySelector(".info-btn");
+                infoBtn.dataset.id = c.id;
+                infoBtn.dataset.title = c.title;
+                infoBtn.dataset.model = c.ai_model;
+                infoBtn.dataset.count = c.message_count;
+                infoBtn.dataset.date = displayDate;
+
+                const renameBtn = itemContainer.querySelector(".rename-btn");
+                renameBtn.dataset.id = c.id;
+                renameBtn.dataset.title = c.title;
+
+                itemContainer.querySelector(".delete-btn").dataset.id = c.id;
+
                 sidebarList.appendChild(itemContainer);
             });
 
@@ -176,8 +202,12 @@ document.addEventListener("DOMContentLoaded", () => {
                             body: JSON.stringify({ conversation_id: convoId, new_title: newTitle })
                         });
                         if (response.ok) {
-                            document.getElementById(`title-${convoId}`).textContent = newTitle;
-                            renameBtn.dataset.title = newTitle; 
+                            const savedTitle = (await response.json()).title; // the server trims it, so show what was actually saved
+                            document.getElementById(`title-${convoId}`).textContent = savedTitle;
+                            renameBtn.dataset.title = savedTitle;
+                            renameBtn.closest(".dropdown").querySelector(".info-btn").dataset.title = savedTitle;
+                        } else {
+                            alert("Failed to rename.");
                         }
                     } catch (err) {
                         alert("Failed to rename.");
@@ -202,7 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             document.getElementById(`convo-${convoId}`).remove();
                             
                             if (currentConversationId == convoId) {
-                                chatHistory.innerHTML = "d-none";
+                                chatHistory.innerHTML = "";
                                 chatHistory.classList.add("d-none");
                                 welcomeTitle.classList.remove("d-none");
                                 aiSelectorDiv.classList.remove("d-none")
@@ -283,8 +313,6 @@ document.addEventListener("DOMContentLoaded", () => {
         chatHistory.appendChild(loadingBubble);
         chatHistory.scrollTop = chatHistory.scrollHeight;
 
-        const localTime = new Date().toLocaleString();
-
         try {
             const response = await fetch("/ai/api/sendPrompt", {
                 method: "POST",
@@ -292,7 +320,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: JSON.stringify({
                     user_prompt: user_chat,
                     conversation_id: currentConversationId || null,
-                    created_at: localTime,
                     ai_model: selectedAiModel
                 })
             });

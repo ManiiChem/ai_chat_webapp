@@ -61,8 +61,6 @@ This is a full-stack AI chat application built with Flask and AWS Bedrock. With 
 
 5.  **Initialize the database**
     ```bash
-    flask db init
-    flask db migrate
     flask db upgrade
     ```
 

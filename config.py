@@ -2,6 +2,7 @@ import os
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY")
+    SESSION_COOKIE_SAMESITE = "Lax" # the login cookie is not sent on POSTs coming from other sites
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URI")
 

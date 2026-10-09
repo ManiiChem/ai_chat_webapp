@@ -43,7 +43,7 @@ class Message(db.Model):
     __tablename__ = "messages"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id"))
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id"), nullable=False)
 
     message_role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)

@@ -1,5 +1,6 @@
 from flask import render_template, redirect, flash, url_for, request, session
 from flask_login import current_user, login_required, login_user, logout_user
+from sqlalchemy import func
 from app.extensions import login_mgr, bcrypt, db
 from app.auth import auth_bp
 from app.models import User
@@ -21,7 +22,7 @@ def input_length(username: str, password: str) -> bool:
 
 @login_mgr.user_loader
 def load_user(uid):
-    return User.query.get(uid)
+    return db.session.get(User, int(uid))
 
 @login_mgr.unauthorized_handler
 def unauthorized_callback():
@@ -39,7 +40,7 @@ def signup():
         password = request.form.get("passwordInput", "").strip()
 
         if username and password and input_length(username, password):
-            user = User.query.filter(User.username.ilike(username)).first() # case insensitive so we dont have multiple usernames like JOhn, john, JOHN
+            user = User.query.filter(func.lower(User.username) == username.lower()).first() # case insensitive so we dont have multiple usernames like JOhn, john, JOHN
             if not user:
                 password_hash = bcrypt.generate_password_hash(password).decode("utf-8") # Do not forget this for the love of god
                 new_user = User(username=username, password_hash=password_hash, role="user")
@@ -77,7 +78,7 @@ def login():
 
     return render_template('login.html')
 
-@auth_bp.route("/logout")
+@auth_bp.route("/logout", methods=["POST"]) # POST so a link or image on another site cant log the user out
 @login_required
 def logout():
     logout_user()
